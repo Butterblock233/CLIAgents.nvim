@@ -7,36 +7,23 @@
 local M = {}
 
 --- Provider configuration templates
---- @table ProviderConfig
+--- @class ProviderConfig
 --- @field command string Base command for the provider
---- @field default_variants table<string, string|boolean> Default command variants
+--- @field args table<string> Default command arguments
 --- @field env table|nil Environment variables for the provider
 --- @field working_directory string|nil Working directory override
-
 M.providers = {
   claude = {
     command = 'claude',
-    default_variants = {
-      continue = '--continue',
-      resume = '--resume',
-      verbose = '--verbose',
-    },
+    args = {},
   },
   gemini = {
-    command = 'gemini-cli',
-    default_variants = {
-      context = '--context',
-      stream = '--stream',
-      model = '--model=gemini-pro',
-    },
+    command = 'gemini',
+    args = {},
   },
   codex = {
     command = 'codex',
-    default_variants = {
-      complete = '--complete',
-      chat = '--chat',
-      engine = '--engine=davinci',
-    },
+    args = {},
   },
 }
 
@@ -125,8 +112,8 @@ function M.validate_provider_config(provider_config)
     return false, 'Provider command must be a non-empty string'
   end
 
-  if provider_config.default_variants and type(provider_config.default_variants) ~= 'table' then
-    return false, 'Provider default_variants must be a table'
+  if provider_config.args and type(provider_config.args) ~= 'table' then
+    return false, 'Provider args must be a table'
   end
 
   return true, nil

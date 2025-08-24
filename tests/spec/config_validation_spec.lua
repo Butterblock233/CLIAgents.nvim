@@ -171,7 +171,7 @@ describe('config validation', function()
         providers = {
           claude = {
             command = 'custom-claude',
-            default_variants = { test = '--test' },
+            args = { '--test' },
           },
         },
       }

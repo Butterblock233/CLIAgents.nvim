@@ -12,7 +12,7 @@ describe('provider functionality', function()
       -- Valid provider config
       local valid_config = {
         command = 'test-cli',
-        default_variants = { test = '--test' },
+        args = { '--test' },
       }
 
       local valid, err = providers.validate_provider_config(valid_config)
@@ -37,11 +37,11 @@ describe('provider functionality', function()
       assert.is_false(valid)
       assert.are.equal('Provider command must be a non-empty string', err)
 
-      -- Invalid: default_variants not a table
-      local invalid4 = { command = 'test', default_variants = 'invalid' }
+      -- Invalid: args not a table
+      local invalid4 = { command = 'test', args = 'invalid' }
       valid, err = providers.validate_provider_config(invalid4)
       assert.is_false(valid)
-      assert.are.equal('Provider default_variants must be a table', err)
+      assert.are.equal('Provider args must be a table', err)
     end)
   end)
 
@@ -65,16 +65,15 @@ describe('provider functionality', function()
       local user_config = {
         claude = {
           command = 'custom-claude',
-          default_variants = { custom = '--custom' },
+          args = { '--custom' },
         },
       }
 
       local config = providers.get_provider_config('claude', user_config)
       assert.are.equal('custom-claude', config.command)
-      assert.are.equal('--custom', config.default_variants.custom)
+      assert.are.equal('--custom', config.args[1])
 
-      -- Should still have original variants
-      assert.are.equal('--continue', config.default_variants.continue)
+      -- Should still have original args (empty by default)
     end)
 
     it('should error for unknown provider', function()
@@ -90,7 +89,7 @@ describe('provider functionality', function()
       assert.are.equal('claude', cmd)
 
       cmd = providers.build_command('gemini', nil, nil, nil)
-      assert.are.equal('gemini-cli', cmd)
+      assert.are.equal('gemini', cmd)
     end)
 
     it('should build commands with base arguments', function()
@@ -116,7 +115,9 @@ describe('provider functionality', function()
       end
 
       local cmd = providers.build_command('claude', nil, git_config, nil)
-      assert.are.equal("pushd '/test/path' && claude && popd", cmd)
+      -- Windows uses double quotes, Unix uses single quotes
+      local expected_cmd = 'pushd ' .. vim.fn.shellescape('/test/path') .. ' && claude && popd'
+      assert.are.equal(expected_cmd, cmd)
 
       -- Restore original function
       git.get_git_root = original_get_git_root
