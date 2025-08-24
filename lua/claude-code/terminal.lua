@@ -105,7 +105,7 @@ local function create_float(config, existing_bufnr)
     if not vim.api.nvim_buf_is_valid(bufnr) then
       bufnr = vim.api.nvim_create_buf(false, true) -- unlisted, scratch
     else
-      local buftype = vim.api.nvim_get_option_value('buftype', {buf = bufnr})
+      local buftype = vim.api.nvim_get_option_value('buftype', { buf = bufnr })
       if buftype ~= 'terminal' then
         -- Buffer exists but is no longer a terminal, create a new one
         bufnr = vim.api.nvim_create_buf(false, true) -- unlisted, scratch
@@ -148,18 +148,38 @@ local function build_command_with_git_root(config, git, base_cmd)
   return base_cmd
 end
 
+--- Build command for specific provider
+--- @param provider_name string Provider name
+--- @param variant_name string|nil Variant name
+--- @param config table Plugin configuration
+--- @param git table Git module
+--- @return string full_command Built command string
+--- @private
+local function build_provider_command(provider_name, variant_name, config, git)
+  local providers = require('claude-code.providers')
+
+  -- Get base arguments for the command
+  local base_args = ''
+  if variant_name and config.command_variants[variant_name] then
+    base_args = config.command_variants[variant_name]
+  end
+
+  -- Build the command using provider abstraction
+  return providers.build_command(provider_name, base_args, config.git, config.providers.providers)
+end
+
 --- Configure common window options
 --- @param win_id number Window ID to configure
 --- @param config table Plugin configuration
 --- @private
 local function configure_window_options(win_id, config)
   if config.window.hide_numbers then
-    vim.api.nvim_set_option_value('number', false, {win = win_id})
-    vim.api.nvim_set_option_value('relativenumber', false, {win = win_id})
+    vim.api.nvim_set_option_value('number', false, { win = win_id })
+    vim.api.nvim_set_option_value('relativenumber', false, { win = win_id })
   end
 
   if config.window.hide_signcolumn then
-    vim.api.nvim_set_option_value('signcolumn', 'no', {win = win_id})
+    vim.api.nvim_set_option_value('signcolumn', 'no', { win = win_id })
   end
 end
 
@@ -273,9 +293,9 @@ local function is_valid_terminal_buffer(bufnr)
 
   local buftype = nil
   pcall(function()
-    buftype = vim.api.nvim_get_option_value('buftype', {buf = bufnr})
+    buftype = vim.api.nvim_get_option_value('buftype', { buf = bufnr })
   end)
-  
+
   local terminal_job_id = nil
   pcall(function()
     terminal_job_id = vim.b[bufnr].terminal_job_id
@@ -313,17 +333,26 @@ local function handle_existing_instance(bufnr, config)
   end
 end
 
---- Create new Claude Code instance
+--- Create new AI assistant instance
 --- @param claude_code table The main plugin module
 --- @param config table Plugin configuration
 --- @param git table Git module
 --- @param instance_id string Instance identifier
+--- @param provider_name string Provider name
+--- @param variant_name string|nil Variant name
 --- @private
-local function create_new_instance(claude_code, config, git, instance_id)
+local function create_new_instance(
+  claude_code,
+  config,
+  git,
+  instance_id,
+  provider_name,
+  variant_name
+)
   if config.window.position == 'float' then
     -- For floating window, create buffer first with terminal
     local new_bufnr = vim.api.nvim_create_buf(false, true) -- unlisted, scratch
-    vim.api.nvim_set_option_value('bufhidden', 'hide', {buf = new_bufnr})
+    vim.api.nvim_set_option_value('bufhidden', 'hide', { buf = new_bufnr })
 
     -- Create the floating window
     local win_id = create_float(config, new_bufnr)
@@ -332,7 +361,7 @@ local function create_new_instance(claude_code, config, git, instance_id)
     vim.api.nvim_win_set_buf(win_id, new_bufnr)
 
     -- Determine command
-    local cmd = build_command_with_git_root(config, git, config.command)
+    local cmd = build_provider_command(provider_name, variant_name, config, git)
 
     -- Run terminal in the buffer
     vim.fn.termopen(cmd)
@@ -355,9 +384,8 @@ local function create_new_instance(claude_code, config, git, instance_id)
     -- Regular split window
     create_split(config.window.position, config)
 
-    -- Determine if we should use the git root directory
-    local base_cmd = build_command_with_git_root(config, git, config.command)
-    local cmd = 'terminal ' .. base_cmd
+    -- Determine command
+    local cmd = 'terminal ' .. build_provider_command(provider_name, variant_name, config, git)
 
     vim.cmd(cmd)
     vim.cmd 'setlocal bufhidden=hide'
@@ -380,16 +408,21 @@ local function create_new_instance(claude_code, config, git, instance_id)
   end
 end
 
---- Toggle the Claude Code terminal window
+--- Toggle the AI assistant terminal window
 --- @param claude_code table The main plugin module
 --- @param config table The plugin configuration
 --- @param git table The git module
-function M.toggle(claude_code, config, git)
+--- @param provider_name string|nil Provider name (optional, uses default if nil)
+--- @param variant_name string|nil Variant name (optional)
+function M.toggle(claude_code, config, git, provider_name, variant_name)
   -- Determine instance ID based on config
   local instance_id = get_instance_id(config, git)
   claude_code.claude_code.current_instance = instance_id
 
-  -- Check if this Claude Code instance is already running
+  -- Use default provider if not specified
+  provider_name = provider_name or config.providers.default_provider
+
+  -- Check if this AI assistant instance is already running
   local bufnr = claude_code.claude_code.instances[instance_id]
 
   -- Validate existing buffer
@@ -408,7 +441,7 @@ function M.toggle(claude_code, config, git)
       claude_code.claude_code.instances[instance_id] = nil
     end
     -- Create new instance
-    create_new_instance(claude_code, config, git, instance_id)
+    create_new_instance(claude_code, config, git, instance_id, provider_name, variant_name)
   end
 end
 

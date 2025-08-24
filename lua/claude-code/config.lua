@@ -60,15 +60,21 @@ local M = {}
 -- @field pushd_cmd string Command to push directory onto stack (e.g., 'pushd' for bash/zsh)
 -- @field popd_cmd string Command to pop directory from stack (e.g., 'popd' for bash/zsh)
 
+--- ClaudeCodeProviders class for provider configuration
+-- @table ClaudeCodeProviders
+-- @field default_provider string Default provider to use
+-- @field providers table Provider-specific configurations
+
 --- ClaudeCodeConfig class for main configuration
 -- @table ClaudeCodeConfig
 -- @field window ClaudeCodeWindow Terminal window settings
 -- @field refresh ClaudeCodeRefresh File refresh settings
 -- @field git ClaudeCodeGit Git integration settings
 -- @field shell ClaudeCodeShell Shell-specific configuration
--- @field command string Command used to launch Claude Code
--- @field command_variants ClaudeCodeCommandVariants Command variants configuration
+-- @field command string Command used to launch Claude Code (deprecated, use providers instead)
+-- @field command_variants ClaudeCodeCommandVariants Command variants configuration (deprecated, use providers instead)
 -- @field keymaps ClaudeCodeKeymaps Keymaps configuration
+-- @field providers ClaudeCodeProviders Provider configuration
 
 --- Default configuration options
 --- @type ClaudeCodeConfig
@@ -124,15 +130,20 @@ M.default_config = {
   -- Keymaps
   keymaps = {
     toggle = {
-      normal = '<C-,>', -- Normal mode keymap for toggling Claude Code
-      terminal = '<C-,>', -- Terminal mode keymap for toggling Claude Code
+      normal = '<C-,>', -- Normal mode keymap for toggling AI assistant
+      terminal = '<C-,>', -- Terminal mode keymap for toggling AI assistant
       variants = {
-        continue = '<leader>cC', -- Normal mode keymap for Claude Code with continue flag
-        verbose = '<leader>cV', -- Normal mode keymap for Claude Code with verbose flag
+        continue = '<leader>cC', -- Normal mode keymap for continue flag
+        verbose = '<leader>cV', -- Normal mode keymap for verbose flag
       },
     },
     window_navigation = true, -- Enable window navigation keymaps (<C-h/j/k/l>)
     scrolling = true, -- Enable scrolling keymaps (<C-f/b>) for page up/down
+  },
+  -- Provider configuration
+  providers = {
+    default_provider = 'claude', -- Default provider to use
+    providers = {}, -- Provider-specific configurations
   },
 }
 
@@ -381,6 +392,36 @@ local function validate_command_variants_config(command_variants)
   return true, nil
 end
 
+--- Validate provider configuration
+--- @param providers_config table Provider configuration
+--- @return boolean valid
+--- @return string? error_message
+local function validate_provider_config(providers_config)
+  if type(providers_config) ~= 'table' then
+    return false, 'providers config must be a table'
+  end
+
+  if type(providers_config.default_provider) ~= 'string' then
+    return false, 'providers.default_provider must be a string'
+  end
+
+  if providers_config.providers and type(providers_config.providers) ~= 'table' then
+    return false, 'providers.providers must be a table'
+  end
+
+  -- Validate individual provider configurations if they exist
+  if providers_config.providers then
+    for provider_name, provider_config in pairs(providers_config.providers) do
+      local valid, err = require('claude-code.providers').validate_provider_config(provider_config)
+      if not valid then
+        return false, 'providers.' .. provider_name .. ': ' .. err
+      end
+    end
+  end
+
+  return true, nil
+end
+
 --- Validate configuration options
 --- @param config ClaudeCodeConfig
 --- @return boolean valid
@@ -418,13 +459,19 @@ local function validate_config(config)
     return false, err
   end
 
-  -- Validate command settings
+  -- Validate command settings (backward compatibility)
   if type(config.command) ~= 'string' then
     return false, 'command must be a string'
   end
 
-  -- Validate command variants settings
+  -- Validate command variants settings (backward compatibility)
   valid, err = validate_command_variants_config(config.command_variants)
+  if not valid then
+    return false, err
+  end
+
+  -- Validate provider settings
+  valid, err = validate_provider_config(config.providers)
   if not valid then
     return false, err
   end
@@ -435,7 +482,7 @@ local function validate_config(config)
     return false, err
   end
 
-  -- Cross-validate keymaps with command variants
+  -- Cross-validate keymaps with command variants (backward compatibility)
   if config.keymaps.toggle.variants then
     for variant_name, keymap in pairs(config.keymaps.toggle.variants) do
       -- Ensure variant exists in command_variants
@@ -472,11 +519,16 @@ function M.parse_config(user_config, silent)
     config.window.float = vim.deepcopy(M.default_config.window.float)
   end
 
+  -- Ensure providers configuration is properly structured
+  if not config.providers then
+    config.providers = vim.deepcopy(M.default_config.providers)
+  end
+
   local valid, err = validate_config(config)
   if not valid then
     -- Only notify if not in silent mode
     if not silent then
-      vim.notify('Claude Code: ' .. err, vim.log.levels.ERROR)
+      vim.notify('AI Assistant: ' .. err, vim.log.levels.ERROR)
     end
     -- Fall back to default config in case of error
     return vim.deepcopy(M.default_config)
