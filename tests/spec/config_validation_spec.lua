@@ -51,7 +51,7 @@ describe('config validation', function()
       invalid_config.window.float = {
         width = true, -- Invalid - boolean
         height = 20,
-        relative = 'editor'
+        relative = 'editor',
       }
 
       local result = config.parse_config(invalid_config, true) -- silent mode
@@ -64,7 +64,7 @@ describe('config validation', function()
       invalid_config.window.float = {
         width = 80,
         height = 20,
-        relative = 'window' -- Invalid option
+        relative = 'window', -- Invalid option
       }
 
       local result = config.parse_config(invalid_config, true) -- silent mode
@@ -78,12 +78,12 @@ describe('config validation', function()
         width = 80,
         height = 20,
         relative = 'editor',
-        border = 'invalid' -- Invalid border style
+        border = 'invalid', -- Invalid border style
       }
 
       local result = config.parse_config(invalid_config, true) -- silent mode
       assert.are.equal(config.default_config.window.position, result.window.position)
-      -- Ensure invalid border doesn't bleed through  
+      -- Ensure invalid border doesn't bleed through
       assert.are.not_equal('invalid', result.window.float.border)
       assert.are.equal(config.default_config.window.float.border, result.window.float.border)
     end)
@@ -159,6 +159,75 @@ describe('config validation', function()
         config.default_config.keymaps.window_navigation,
         result.keymaps.window_navigation
       )
+    end)
+  end)
+
+  describe('provider validation', function()
+    it('should validate provider configuration', function()
+      -- Valid provider config
+      local valid_config = vim.deepcopy(config.default_config)
+      valid_config.providers = {
+        default_provider = 'claude',
+        providers = {
+          claude = {
+            command = 'custom-claude',
+            default_variants = { test = '--test' },
+          },
+        },
+      }
+
+      local result = config.parse_config(valid_config, true)
+      assert.are.equal('custom-claude', result.providers.providers.claude.command)
+
+      -- Invalid: default_provider not a string
+      local invalid1 = vim.deepcopy(config.default_config)
+      invalid1.providers.default_provider = 123
+
+      local result1 = config.parse_config(invalid1, true)
+      assert.are.equal(
+        config.default_config.providers.default_provider,
+        result1.providers.default_provider
+      )
+
+      -- Invalid: providers not a table
+      local invalid2 = vim.deepcopy(config.default_config)
+      invalid2.providers.providers = 'invalid'
+
+      local result2 = config.parse_config(invalid2, true)
+      assert.is.table(result2.providers.providers)
+    end)
+
+    it('should maintain backward compatibility with command field', function()
+      -- Config with only old command field (should work)
+      local old_config = vim.deepcopy(config.default_config)
+      old_config.command = 'old-claude'
+      old_config.command_variants = { test = '--test' }
+      -- Remove providers to test fallback
+      old_config.providers = nil
+
+      local result = config.parse_config(old_config, true)
+      assert.are.equal('old-claude', result.command)
+      assert.are.equal('--test', result.command_variants.test)
+      -- Should also have default providers config
+      assert.is.table(result.providers)
+      assert.are.equal('claude', result.providers.default_provider)
+    end)
+
+    it('should prefer providers over deprecated command fields', function()
+      -- Config with both old and new fields (should prefer providers)
+      local mixed_config = vim.deepcopy(config.default_config)
+      mixed_config.command = 'old-claude'
+      mixed_config.providers.default_provider = 'gemini'
+      mixed_config.providers.providers = {
+        gemini = { command = 'new-gemini' },
+      }
+
+      local result = config.parse_config(mixed_config, true)
+      -- Should use providers config
+      assert.are.equal('gemini', result.providers.default_provider)
+      assert.are.equal('new-gemini', result.providers.providers.gemini.command)
+      -- Old command should still be preserved for compatibility
+      assert.are.equal('old-claude', result.command)
     end)
   end)
 end)

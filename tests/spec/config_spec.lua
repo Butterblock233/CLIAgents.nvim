@@ -38,7 +38,7 @@ describe('config', function()
       local result = config.parse_config(invalid_config, true) -- silent mode
       assert.are.equal(config.default_config.window.split_ratio, result.window.split_ratio)
     end)
-    
+
     it('should maintain backward compatibility with height_ratio', function()
       -- Config using the legacy height_ratio instead of split_ratio
       local legacy_config = {
@@ -49,7 +49,7 @@ describe('config', function()
       }
 
       local result = config.parse_config(legacy_config, true) -- silent mode
-      
+
       -- split_ratio should be set to the height_ratio value
       assert.are.equal(0.7, result.window.split_ratio)
     end)
@@ -68,7 +68,7 @@ describe('config', function()
       }
 
       local result = config.parse_config(float_config, true) -- silent mode
-      
+
       assert.are.equal('float', result.window.position)
       assert.are.equal(80, result.window.float.width)
       assert.are.equal(20, result.window.float.height)
@@ -89,7 +89,7 @@ describe('config', function()
       }
 
       local result = config.parse_config(float_config, true) -- silent mode
-      
+
       assert.are.equal('80%', result.window.float.width)
       assert.are.equal('50%', result.window.float.height)
     end)
@@ -109,7 +109,7 @@ describe('config', function()
       }
 
       local result = config.parse_config(float_config, true) -- silent mode
-      
+
       assert.are.equal('center', result.window.float.row)
       assert.are.equal('center', result.window.float.col)
     end)
@@ -123,7 +123,7 @@ describe('config', function()
       }
 
       local result = config.parse_config(float_config, true) -- silent mode
-      
+
       -- Should have default float configuration
       assert.is_not_nil(result.window.float)
       assert.are.equal('80%', result.window.float.width)

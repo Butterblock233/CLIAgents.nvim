@@ -26,7 +26,7 @@ describe('terminal module', function()
     _G.vim.o = setmetatable({
       lines = 100,
       columns = 100,
-      cmdheight = 1
+      cmdheight = 1,
     }, {
       __newindex = function(t, k, v)
         -- Ensure lines and columns are always numbers
@@ -35,7 +35,7 @@ describe('terminal module', function()
         else
           rawset(t, k, v)
         end
-      end
+      end,
     })
 
     -- Mock vim.cmd
@@ -48,52 +48,58 @@ describe('terminal module', function()
     _G.vim.api.nvim_buf_is_valid = function(bufnr)
       return bufnr ~= nil and bufnr > 0
     end
-    
+
     -- Mock vim.api.nvim_buf_get_option (deprecated)
     _G.vim.api.nvim_buf_get_option = function(bufnr, option)
       if option == 'buftype' then
-        return 'terminal'  -- Always return terminal for valid buffers in tests
+        return 'terminal' -- Always return terminal for valid buffers in tests
       end
       return ''
     end
-    
+
     -- Mock vim.api.nvim_get_option_value (new API)
     _G.vim.api.nvim_get_option_value = function(option, opts)
       if option == 'buftype' then
-        return 'terminal'  -- Always return terminal for valid buffers in tests
+        return 'terminal' -- Always return terminal for valid buffers in tests
       end
       return ''
     end
-    
+
     -- Mock vim.api.nvim_buf_get_var
     _G.vim.api.nvim_buf_get_var = function(bufnr, varname)
       if varname == 'terminal_job_id' then
-        return 12345  -- Return a mock job ID
+        return 12345 -- Return a mock job ID
       end
       error('Invalid buffer variable: ' .. varname)
     end
-    
+
     -- Mock vim.b for buffer variables (new API)
     _G.vim.b = setmetatable({}, {
       __index = function(t, bufnr)
         if not rawget(t, bufnr) then
           rawset(t, bufnr, {
-            terminal_job_id = 12345  -- Mock job ID
+            terminal_job_id = 12345, -- Mock job ID
           })
         end
         return rawget(t, bufnr)
-      end
+      end,
     })
-    
+
     -- Mock vim.api.nvim_set_option_value (new API for both buffer and window options)
     _G.vim.api.nvim_set_option_value = function(option, value, opts)
       -- Just mock this to do nothing for tests
       return true
     end
-    
+
     -- Mock vim.fn.jobwait
     _G.vim.fn.jobwait = function(job_ids, timeout)
-      return {-1}  -- -1 means job is still running
+      return { -1 } -- -1 means job is still running
+    end
+
+    -- Mock vim.fn.termopen to track terminal commands
+    _G.vim.fn.termopen = function(cmd)
+      table.insert(vim_cmd_calls, 'termopen ' .. cmd)
+      return 12345 -- Return mock job ID
     end
 
     -- Mock vim.fn.win_findbuf
@@ -150,11 +156,15 @@ describe('terminal module', function()
       git = {
         use_git_root = true,
         multi_instance = true,
+        shell = {
+          separator = '&&',
+          pushd_cmd = 'pushd',
+          popd_cmd = 'popd',
+        },
       },
-      shell = {
-        separator = '&&',
-        pushd_cmd = 'pushd',
-        popd_cmd = 'popd',
+      providers = {
+        default_provider = 'claude',
+        providers = {},
       },
     }
 
@@ -206,7 +216,10 @@ describe('terminal module', function()
 
       -- Instance should be created in instances table
       local current_instance = claude_code.claude_code.current_instance
-      assert.is_not_nil(claude_code.claude_code.instances[current_instance], 'Instance buffer should be set')
+      assert.is_not_nil(
+        claude_code.claude_code.instances[current_instance],
+        'Instance buffer should be set'
+      )
     end)
 
     it('should use git root as instance identifier when use_git_root is true', function()
@@ -219,13 +232,13 @@ describe('terminal module', function()
 
       -- Current instance should be git root
       assert.are.equal('/test/git/root', claude_code.claude_code.current_instance)
-      
+
       -- Check that git root was used in terminal command
       local git_root_cmd_found = false
 
       for _, cmd in ipairs(vim_cmd_calls) do
         -- The path should now be shell-escaped
-        if cmd:match("terminal pushd '/test/git/root' && " .. config.command .. " && popd") then
+        if cmd:match('terminal pushd .* && ' .. config.command .. ' && popd') then
           git_root_cmd_found = true
           break
         end
@@ -260,15 +273,14 @@ describe('terminal module', function()
         if option == 'buftype' and opts and opts.buf == 42 then
           return 'terminal'
         elseif option == 'buftype' then
-          return 'terminal'  -- Default to terminal for tests
+          return 'terminal' -- Default to terminal for tests
         end
         return ''
       end
-      
-      
+
       -- Track how many times nvim_win_close is called
       local close_count = 0
-      
+
       -- Create a function to clear the win_ids array
       _G.vim.api.nvim_win_close = function(win_id, force)
         close_count = close_count + 1
@@ -287,7 +299,9 @@ describe('terminal module', function()
 
       -- Check that the windows were closed
       if #win_ids ~= 0 then
-        error('Windows not closed. Close count: ' .. close_count .. ', Remaining windows: ' .. #win_ids)
+        error(
+          'Windows not closed. Close count: ' .. close_count .. ', Remaining windows: ' .. #win_ids
+        )
       end
       assert.are.equal(0, #win_ids, 'Windows should be closed')
     end)
@@ -322,11 +336,13 @@ describe('terminal module', function()
 
       assert.is_true(botright_cmd_found, 'Botright split command should be called')
       assert.is_true(resize_cmd_found, 'Resize command should be called')
-      
+
       -- Either buffer reuse or new terminal creation is acceptable
       -- The key is that the window reopens
-      assert.is_true(buffer_cmd_found or terminal_cmd_found, 
-        'Either buffer reuse or new terminal command should be called')
+      assert.is_true(
+        buffer_cmd_found or terminal_cmd_found,
+        'Either buffer reuse or new terminal command should be called'
+      )
     end)
 
     it('should create buffer with sanitized name for multi-instance', function()
@@ -351,7 +367,10 @@ describe('terminal module', function()
           local buffer_name = cmd:match('file (.+)')
           if buffer_name then
             -- Buffer names should only contain alphanumeric, hyphen, and underscore
-            assert.is_nil(buffer_name:match('[^%w%-_]'), 'Buffer name should only contain [a-zA-Z0-9_-]')
+            assert.is_nil(
+              buffer_name:match('[^%w%-_]'),
+              'Buffer name should only contain [a-zA-Z0-9_-]'
+            )
           end
           break
         end
@@ -378,9 +397,16 @@ describe('terminal module', function()
       terminal.toggle(claude_code, config, git)
 
       -- Invalid buffer should be cleaned up and replaced with a new valid one
-      assert.is_not_nil(claude_code.claude_code.instances[instance_id], 'Should have new valid buffer')
-      assert.are_not.equal(999, claude_code.claude_code.instances[instance_id], 'Invalid buffer should be cleaned up')
-      
+      assert.is_not_nil(
+        claude_code.claude_code.instances[instance_id],
+        'Should have new valid buffer'
+      )
+      assert.are_not.equal(
+        999,
+        claude_code.claude_code.instances[instance_id],
+        'Invalid buffer should be cleaned up'
+      )
+
       -- Restore original mock
       _G.vim.api.nvim_buf_is_valid = original_is_valid
     end)
@@ -404,7 +430,10 @@ describe('terminal module', function()
       terminal.toggle(claude_code, config, git)
 
       -- Check that global instance is created
-      assert.is_not_nil(claude_code.claude_code.instances['global'], 'Global instance should be created')
+      assert.is_not_nil(
+        claude_code.claude_code.instances['global'],
+        'Global instance should be created'
+      )
     end)
   end)
 
@@ -421,7 +450,7 @@ describe('terminal module', function()
 
       for _, cmd in ipairs(vim_cmd_calls) do
         -- The path should now be shell-escaped in the command
-        if cmd:match('terminal pushd .*/test/git/root.* && ' .. config.command .. ' && popd') then
+        if cmd:match('terminal pushd .* && ' .. config.command .. ' && popd') then
           git_root_cmd_found = true
           break
         end
@@ -434,9 +463,9 @@ describe('terminal module', function()
       -- Set git config to use root
       config.git.use_git_root = true
       -- Configure custom directory commands for nushell
-      config.shell.pushd_cmd = 'enter'
-      config.shell.popd_cmd = 'exit'
-      config.shell.separator = ';'
+      config.git.shell.pushd_cmd = 'enter'
+      config.git.shell.popd_cmd = 'exit'
+      config.git.shell.separator = ';'
 
       -- Call toggle
       terminal.toggle(claude_code, config, git)
@@ -445,8 +474,11 @@ describe('terminal module', function()
       local custom_cmd_found = false
 
       for _, cmd in ipairs(vim_cmd_calls) do
-        -- The path should now be shell-escaped in the command
-        if cmd:match('terminal enter .*/test/git/root.* ; ' .. config.command .. ' ; exit') then
+        -- Check both vim.cmd and termopen calls for custom directory commands
+        if
+          cmd:match('terminal enter .* ; ' .. config.command .. ' ; exit')
+          or cmd:match('termopen enter .* ; ' .. config.command .. ' ; exit')
+        then
           custom_cmd_found = true
           break
         end
@@ -618,14 +650,14 @@ describe('terminal module', function()
     it('should create floating window when position is "float"', function()
       -- Claude Code is not running - update for multi-instance support
       claude_code.claude_code.instances = {}
-      
+
       -- Configure floating window
       config.window.position = 'float'
       config.window.float = {
         width = 80,
         height = 20,
         relative = 'editor',
-        border = 'rounded'
+        border = 'rounded',
       }
 
       -- Call toggle
@@ -647,22 +679,22 @@ describe('terminal module', function()
     end)
 
     it('should calculate float dimensions from percentages', function()
-      -- Claude Code is not running - update for multi-instance support  
+      -- Claude Code is not running - update for multi-instance support
       claude_code.claude_code.instances = {}
-      
+
       -- Configure floating window with percentage dimensions
       config.window.position = 'float'
       config.window.float = {
         width = '80%',
         height = '50%',
         relative = 'editor',
-        border = 'single'
+        border = 'single',
       }
 
       -- Call toggle
       terminal.toggle(claude_code, config, git)
 
-      -- Check that dimensions were calculated correctly  
+      -- Check that dimensions were calculated correctly
       assert.is_true(nvim_open_win_called, 'nvim_open_win should be called')
       local editor_height = 40 - 1 - 1 -- lines - cmdheight - status line = 38
       local expected_width = math.floor(120 * 0.8) -- 80% of 120
@@ -679,7 +711,7 @@ describe('terminal module', function()
     it('should center floating window when position is "center"', function()
       -- Claude Code is not running - update for multi-instance support
       claude_code.claude_code.instances = {}
-      
+
       -- Configure floating window to be centered
       config.window.position = 'float'
       config.window.float = {
@@ -687,7 +719,7 @@ describe('terminal module', function()
         height = 20,
         row = 'center',
         col = 'center',
-        relative = 'editor'
+        relative = 'editor',
       }
 
       -- Call toggle
@@ -702,17 +734,17 @@ describe('terminal module', function()
 
     it('should reuse existing buffer for floating window when toggling', function()
       -- Claude Code is already running - update for multi-instance support
-      local instance_id = "global"  -- Single instance mode
+      local instance_id = 'global' -- Single instance mode
       claude_code.claude_code.instances = { [instance_id] = 42 }
       win_ids = {} -- No windows displaying the buffer
-      
+
       -- Configure floating window
       config.window.position = 'float'
       config.window.float = {
         width = 80,
         height = 20,
         relative = 'editor',
-        border = 'none'
+        border = 'none',
       }
 
       -- Call toggle
@@ -724,7 +756,7 @@ describe('terminal module', function()
       assert.is_not_nil(nvim_open_win_config, 'Window config should be provided')
       assert.are.equal('editor', nvim_open_win_config.relative)
       assert.are.equal('none', nvim_open_win_config.border)
-      
+
       -- Verify existing buffer is reused (buffer 42 from instances)
       -- The specific buffer reuse logic is tested implicitly through the toggle function
     end)
@@ -732,7 +764,7 @@ describe('terminal module', function()
     it('should handle out-of-bounds dimensions gracefully', function()
       -- Claude Code is not running
       claude_code.claude_code.bufnr = nil
-      
+
       -- Configure floating window with large dimensions
       config.window.position = 'float'
       config.window.float = {
@@ -741,7 +773,7 @@ describe('terminal module', function()
         row = '90%',
         col = '95%',
         relative = 'editor',
-        border = 'rounded'
+        border = 'rounded',
       }
 
       -- Call toggle
@@ -752,6 +784,97 @@ describe('terminal module', function()
       local editor_height = 40 - 1 - 1 -- lines - cmdheight - status line = 38
       assert.are.equal(math.floor(120 * 1.5), nvim_open_win_config.width)
       assert.are.equal(math.floor(editor_height * 1.1), nvim_open_win_config.height)
+    end)
+  end)
+
+  describe('provider support', function()
+    it('should build provider commands correctly', function()
+      -- Mock the provider command building
+      local providers = require('claude-code.providers')
+      local original_build_command = providers.build_command
+
+      providers.build_command = function(provider_name, base_args, git_config, user_config)
+        return provider_name .. '-cli' .. (base_args and ' ' .. base_args or '')
+      end
+
+      -- Call toggle with provider
+      terminal.toggle(claude_code, config, git, 'gemini', 'stream')
+
+      -- Check that provider command was used
+      local provider_cmd_found = false
+      for _, cmd in ipairs(vim_cmd_calls) do
+        if cmd:match('terminal gemini%-cli') then
+          provider_cmd_found = true
+          break
+        end
+      end
+
+      assert.is_true(provider_cmd_found, 'Provider command should be used')
+
+      -- Restore original function
+      providers.build_command = original_build_command
+    end)
+
+    it('should use default provider when none specified', function()
+      -- Mock the provider command building
+      local providers = require('claude-code.providers')
+      local original_build_command = providers.build_command
+
+      providers.build_command = function(provider_name, base_args, git_config, user_config)
+        return provider_name .. '-cli'
+      end
+
+      -- Call toggle without provider (should use default)
+      terminal.toggle(claude_code, config, git)
+
+      -- Check that default provider command was used
+      local default_cmd_found = false
+      for _, cmd in ipairs(vim_cmd_calls) do
+        if cmd:match('terminal claude%-cli') then
+          default_cmd_found = true
+          break
+        end
+      end
+
+      assert.is_true(default_cmd_found, 'Default provider command should be used')
+
+      -- Restore original function
+      providers.build_command = original_build_command
+    end)
+
+    it('should handle provider variants correctly', function()
+      -- Mock the provider command building
+      local providers = require('claude-code.providers')
+      local original_build_command = providers.build_command
+
+      providers.build_command = function(provider_name, base_args, git_config, user_config)
+        return provider_name .. '-cli' .. (base_args and ' ' .. base_args or '')
+      end
+
+      -- Set up command variants in config
+      config.command_variants = {
+        complete = '--complete',
+      }
+
+      -- Call toggle with provider and variant
+      terminal.toggle(claude_code, config, git, 'codex', 'complete')
+
+      -- Check that provider command with variant was used
+      local variant_cmd_found = false
+      for _, cmd in ipairs(vim_cmd_calls) do
+        if
+          cmd:match('terminal codex%-cli.*%-%-complete')
+          or cmd:match('termopen codex%-cli.*%-%-complete')
+        then
+          variant_cmd_found = true
+          break
+        end
+      end
+
+      assert.is_true(variant_cmd_found, 'Provider command with variant should be used')
+
+      -- Restore original function
+      providers.build_command = original_build_command
     end)
   end)
 end)

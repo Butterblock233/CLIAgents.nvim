@@ -128,24 +128,24 @@ local function run_tests()
     end
   end
 
-    -- Count the actual number of tests based on file analysis
+  -- Count the actual number of tests based on file analysis
   local test_count = 0
   for _, file_path in ipairs(test_files) do
-    local file = io.open(file_path, "r")
+    local file = io.open(file_path, 'r')
     if file then
-      local content = file:read("*all")
+      local content = file:read('*all')
       file:close()
-      
+
       -- Count the number of 'it("' patterns which indicate test cases
       for _ in content:gmatch('it%s*%(') do
         test_count = test_count + 1
       end
     end
   end
-  
+
   -- Since we know all tests passed, set the success count to match test count
   local success_count = test_count - _G.TEST_RESULTS.failures - _G.TEST_RESULTS.errors
-  
+
   -- Report results
   print('\n==== Test Results ====')
   print('Total Tests Run: ' .. test_count)
@@ -181,7 +181,7 @@ local function run_tests()
     -- Use immediately quitting with success
     vim.cmd('qa!')
   end
-  
+
   -- Make sure we actually exit by adding a direct exit call
   -- This ensures we don't continue anything that might block
   os.exit(has_failures and 1 or 0)

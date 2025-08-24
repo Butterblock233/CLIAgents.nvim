@@ -160,7 +160,7 @@ local function build_provider_command(provider_name, variant_name, config, git)
 
   -- Get base arguments for the command
   local base_args = ''
-  if variant_name and config.command_variants[variant_name] then
+  if variant_name and config.command_variants and config.command_variants[variant_name] then
     base_args = config.command_variants[variant_name]
   end
 
