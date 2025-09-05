@@ -354,6 +354,17 @@ local function create_new_instance(
   provider_name,
   variant_name
 )
+  -- Build command first to ensure provider is valid before creating any window
+  local ok, cmd_or_err = pcall(function()
+    return build_provider_command(provider_name, variant_name, config, git)
+  end)
+  if not ok then
+    vim.notify(tostring(cmd_or_err), vim.log.levels.ERROR)
+    return
+  end
+
+  local built_cmd = cmd_or_err
+
   if config.window.position == 'float' then
     -- For floating window, create buffer first with terminal
     local new_bufnr = vim.api.nvim_create_buf(false, true) -- unlisted, scratch
@@ -365,11 +376,8 @@ local function create_new_instance(
     -- Set current buffer to run terminal command
     vim.api.nvim_win_set_buf(win_id, new_bufnr)
 
-    -- Determine command
-    local cmd = build_provider_command(provider_name, variant_name, config, git)
-
     -- Run terminal in the buffer
-    vim.fn.termopen(cmd)
+    vim.fn.termopen(built_cmd)
 
     -- Create a unique buffer name
     local buffer_name = generate_buffer_name(instance_id, config)
@@ -389,9 +397,8 @@ local function create_new_instance(
     -- Regular split window
     create_split(config.window.position, config)
 
-    -- Determine command
-    local cmd = 'terminal ' .. build_provider_command(provider_name, variant_name, config, git)
-
+    -- Determine command and open terminal
+    local cmd = 'terminal ' .. built_cmd
     vim.cmd(cmd)
     vim.cmd 'setlocal bufhidden=hide'
 

@@ -32,16 +32,57 @@ M.providers = {
 --- @param user_config table|nil User configuration for the provider
 --- @return table provider_config Provider configuration
 function M.get_provider_config(provider_name, user_config)
+  -- Basic validation of input
+  if not provider_name or provider_name == '' then
+    error('Provider name must be a non-empty string')
+  end
+
   local provider = M.providers[provider_name]
+  local user_provider = (user_config and user_config[provider_name]) or nil
+
+  -- If provider isn't built-in, allow user-defined providers via setup config
+  if not provider and user_provider then
+    local cfg = vim.deepcopy(user_provider)
+    local ok, msg = M.validate_provider_config(cfg)
+    if not ok then
+      error('Invalid provider config for ' .. provider_name .. ': ' .. tostring(msg))
+    end
+    return cfg
+  end
+
+  -- If provider still not found, construct a helpful error message
   if not provider then
-    error('Unknown provider: ' .. tostring(provider_name))
+    local available = {}
+    for name, _ in pairs(M.providers) do
+      table.insert(available, name)
+    end
+    if user_config and type(user_config) == 'table' then
+      for name, _ in pairs(user_config) do
+        if not M.providers[name] then
+          table.insert(available, name)
+        end
+      end
+    end
+    table.sort(available)
+    error(
+      ('Unknown provider: %s. Available providers: %s'):format(
+        tostring(provider_name),
+        table.concat(available, ', ')
+      )
+    )
   end
 
   local config = vim.deepcopy(provider)
 
   -- Merge user configuration if provided
-  if user_config and user_config[provider_name] then
-    config = vim.tbl_deep_extend('force', config, user_config[provider_name])
+  if user_provider then
+    config = vim.tbl_deep_extend('force', config, user_provider)
+  end
+
+  -- Validate final configuration
+  local ok, msg = M.validate_provider_config(config)
+  if not ok then
+    error('Invalid provider config for ' .. provider_name .. ': ' .. tostring(msg))
   end
 
   return config
