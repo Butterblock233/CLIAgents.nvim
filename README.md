@@ -158,31 +158,31 @@ require("claude-code").setup({
 
 ```vim
 " In your Vim/Neovim commands or init file:
-:ClaudeCode
+:CLIAgents
 ```
 
 ```lua
 -- Or from Lua:
-vim.cmd[[ClaudeCode]]
+vim.cmd[[CLIAgents]]
 
 -- Or map to a key:
-vim.keymap.set('n', '<leader>cc', '<cmd>ClaudeCode<CR>', { desc = 'Toggle Claude Code' })
+vim.keymap.set('n', '<leader>cc', '<cmd>CLIAgents<CR>', { desc = 'Toggle CLI Agents' })
 ```
 
 ### Commands
 
 Basic command:
 
-- `:ClaudeCode` - Toggle the Claude Code terminal window
+- `:CLIAgents` - Toggle the CLI Agents terminal window
 
 Conversation management commands:
 
-- `:ClaudeCodeContinue` - Resume the most recent conversation
-- `:ClaudeCodeResume` - Display an interactive conversation picker
+- `:CLIAgentsContinue` - Resume the most recent conversation
+- `:CLIAgentsResume` - Display an interactive conversation picker
 
 Output options command:
 
-- `:ClaudeCodeVerbose` - Enable verbose logging with full turn-by-turn output
+- `:CLIAgentsVerbose` - Enable verbose logging with full turn-by-turn output
 
 Note: Commands are automatically generated for each entry in your `command_variants` configuration.
 
@@ -190,15 +190,15 @@ Note: Commands are automatically generated for each entry in your `command_varia
 
 Default key mappings:
 
-- `<leader>ac` - Toggle Claude Code terminal window (normal mode)
-- `<C-,>` - Toggle Claude Code terminal window (both normal and terminal modes)
+- `<leader>ac` - Toggle CLI Agents terminal window (normal mode)
+- `<C-,>` - Toggle CLI Agents terminal window (both normal and terminal modes)
 
 Variant mode mappings (if configured):
 
-- `<leader>cC` - Toggle Claude Code with --continue flag
-- `<leader>cV` - Toggle Claude Code with --verbose flag
+- `<leader>cC` - Toggle CLI Agents with --continue flag
+- `<leader>cV` - Toggle CLI Agents with --verbose flag
 
-Additionally, when in the Claude Code terminal:
+Additionally, when in the CLI Agents terminal:
 
 - `<C-h>` - Move to the window on the left
 - `<C-j>` - Move to the window below
@@ -209,11 +209,11 @@ Additionally, when in the Claude Code terminal:
 
 Note: After scrolling with `<C-f>` or `<C-b>`, you'll need to press the `i` key to re-enter insert mode so you can continue typing to Claude Code.
 
-When Claude Code modifies files that are open in Neovim, they'll be automatically reloaded.
+When CLI Agents modifies files that are open in Neovim, they'll be automatically reloaded.
 
 ### Floating Window Example
 
-To use Claude Code in a floating window:
+To use CLI Agents in a floating window:
 
 ```lua
 require("claude-code").setup({
@@ -235,9 +235,9 @@ require("claude-code").setup({
 
 This plugin:
 
-1. Creates a terminal buffer running the Claude Code CLI
+1. Creates a terminal buffer running the CLI Agents
 2. Sets up autocommands to detect file changes on disk
-3. Automatically reloads files when they're modified by Claude Code
+3. Automatically reloads files when they're modified by CLI Agents
 4. Provides convenient keymaps and commands for toggling the terminal
 5. Automatically detects git repositories and sets working directory to the git root
 

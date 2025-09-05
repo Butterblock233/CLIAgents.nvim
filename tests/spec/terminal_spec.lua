@@ -230,8 +230,8 @@ describe('terminal module', function()
       -- Call toggle
       terminal.toggle(claude_code, config, git)
 
-      -- Current instance should be git root
-      assert.are.equal('/test/git/root', claude_code.claude_code.current_instance)
+      -- Current instance should be git root with provider suffix
+      assert.are.equal('/test/git/root:claude', claude_code.claude_code.current_instance)
 
       -- Check that git root was used in terminal command
       -- Skip on Windows due to shell compatibility issues
@@ -258,13 +258,13 @@ describe('terminal module', function()
       -- Call toggle
       terminal.toggle(claude_code, config, git)
 
-      -- Current instance should be current directory
-      assert.are.equal('/test/current/dir', claude_code.claude_code.current_instance)
+      -- Current instance should be current directory with provider suffix
+      assert.are.equal('/test/current/dir:claude', claude_code.claude_code.current_instance)
     end)
 
     it('should close window when instance is visible', function()
       -- Setup existing instance
-      local instance_id = '/test/git/root'
+      local instance_id = '/test/git/root:claude'
       claude_code.claude_code.instances[instance_id] = 42
       claude_code.claude_code.current_instance = instance_id
       win_ids = { 100, 101 } -- Windows displaying the buffer
@@ -311,7 +311,7 @@ describe('terminal module', function()
 
     it('should reopen window when instance exists but is hidden', function()
       -- Setup existing instance that's not visible
-      local instance_id = '/test/git/root'
+      local instance_id = '/test/git/root:claude'
       claude_code.claude_code.instances[instance_id] = 42
       claude_code.claude_code.current_instance = instance_id
       win_ids = {} -- No windows displaying the buffer
@@ -384,7 +384,7 @@ describe('terminal module', function()
 
     it('should clean up invalid buffers from instances table', function()
       -- Setup invalid buffer in instances
-      local instance_id = '/test/git/root'
+      local instance_id = '/test/git/root:claude'
       claude_code.claude_code.instances[instance_id] = 999 -- Invalid buffer number
 
       -- Mock nvim_buf_is_valid to return false for the specific invalid buffer
@@ -424,8 +424,8 @@ describe('terminal module', function()
       -- Call toggle
       terminal.toggle(claude_code, config, git)
 
-      -- Current instance should be "global"
-      assert.are.equal('global', claude_code.claude_code.current_instance)
+      -- Current instance should be "global" with provider suffix
+      assert.are.equal('global:claude', claude_code.claude_code.current_instance)
     end)
 
     it('should create single global instance', function()
@@ -434,7 +434,7 @@ describe('terminal module', function()
 
       -- Check that global instance is created
       assert.is_not_nil(
-        claude_code.claude_code.instances['global'],
+        claude_code.claude_code.instances['global:claude'],
         'Global instance should be created'
       )
     end)
@@ -884,6 +884,79 @@ describe('terminal module', function()
 
       -- Restore original function
       providers.build_command = original_build_command
+    end)
+
+    it('should create separate instances for different providers', function()
+      -- Reset instances for clean test
+      claude_code.claude_code.instances = {}
+
+      -- Mock bufnr to return different buffer numbers for different providers
+      local original_bufnr = _G.vim.fn.bufnr
+      local buffer_counter = 42
+      _G.vim.fn.bufnr = function(pattern)
+        if pattern == '%' then
+          buffer_counter = buffer_counter + 1
+          return buffer_counter
+        end
+        return buffer_counter
+      end
+
+      -- Call toggle with claude provider
+      terminal.toggle(claude_code, config, git, 'claude')
+      local claude_instance_id = claude_code.claude_code.current_instance
+      local claude_buffer = claude_code.claude_code.instances[claude_instance_id]
+
+      -- Call toggle with gemini provider
+      terminal.toggle(claude_code, config, git, 'gemini')
+      local gemini_instance_id = claude_code.claude_code.current_instance
+      local gemini_buffer = claude_code.claude_code.instances[gemini_instance_id]
+
+      -- Verify different instance IDs and buffers for different providers
+      assert.are_not.equal(
+        claude_instance_id,
+        gemini_instance_id,
+        'Different providers should have different instance IDs'
+      )
+      assert.are_not.equal(
+        claude_buffer,
+        gemini_buffer,
+        'Different providers should have different buffers'
+      )
+
+      -- Verify instance IDs contain provider names
+      assert.is_not_nil(
+        claude_instance_id:match(':claude$'),
+        'Claude instance ID should end with :claude'
+      )
+      assert.is_not_nil(
+        gemini_instance_id:match(':gemini$'),
+        'Gemini instance ID should end with :gemini'
+      )
+
+      -- Restore original bufnr mock
+      _G.vim.fn.bufnr = original_bufnr
+    end)
+
+    it('should reuse same instance for same provider', function()
+      -- Reset instances for clean test
+      claude_code.claude_code.instances = {}
+
+      -- Call toggle with claude provider twice
+      terminal.toggle(claude_code, config, git, 'claude')
+      local first_instance_id = claude_code.claude_code.current_instance
+      local first_buffer = claude_code.claude_code.instances[first_instance_id]
+
+      terminal.toggle(claude_code, config, git, 'claude')
+      local second_instance_id = claude_code.claude_code.current_instance
+      local second_buffer = claude_code.claude_code.instances[second_instance_id]
+
+      -- Verify same instance ID and buffer for same provider
+      assert.are.equal(
+        first_instance_id,
+        second_instance_id,
+        'Same provider should have same instance ID'
+      )
+      assert.are.equal(first_buffer, second_buffer, 'Same provider should reuse same buffer')
     end)
   end)
 end)

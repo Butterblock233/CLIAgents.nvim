@@ -264,22 +264,27 @@ function M.force_insert_mode(claude_code, config)
   end
 end
 
---- Determine instance ID based on configuration
+--- Determine instance ID based on configuration and provider
 --- @param config table Plugin configuration
 --- @param git table Git module
+--- @param provider_name string Provider name
 --- @return string instance_id Instance identifier
 --- @private
-local function get_instance_id(config, git)
+local function get_instance_id(config, git, provider_name)
+  local base_id
   if config.git.multi_instance then
     if config.git.use_git_root then
-      return get_instance_identifier(git)
+      base_id = get_instance_identifier(git)
     else
-      return vim.fn.getcwd()
+      base_id = vim.fn.getcwd()
     end
   else
     -- Use a fixed ID for single instance mode
-    return 'global'
+    base_id = 'global'
   end
+
+  -- Include provider name in instance ID to support multiple providers
+  return base_id .. ':' .. provider_name
 end
 
 --- Check if buffer is a valid terminal
@@ -415,12 +420,12 @@ end
 --- @param provider_name string|nil Provider name (optional, uses default if nil)
 --- @param variant_name string|nil Variant name (optional)
 function M.toggle(claude_code, config, git, provider_name, variant_name)
-  -- Determine instance ID based on config
-  local instance_id = get_instance_id(config, git)
-  claude_code.claude_code.current_instance = instance_id
-
   -- Use default provider if not specified
   provider_name = provider_name or config.providers.default_provider
+
+  -- Determine instance ID based on config and provider
+  local instance_id = get_instance_id(config, git, provider_name)
+  claude_code.claude_code.current_instance = instance_id
 
   -- Check if this AI assistant instance is already running
   local bufnr = claude_code.claude_code.instances[instance_id]

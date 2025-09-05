@@ -34,6 +34,24 @@ M.commands = commands
 --- @type table
 M.config = {}
 
+-- Track the last used provider in this Neovim session
+--- @type string|nil
+M.last_used_provider = nil
+
+-- Determine whether any session (terminal buffer) exists
+-- @return boolean has_session
+local function has_any_session()
+  if not M.claude_code or not M.claude_code.instances then
+    return false
+  end
+  for _, bufnr in pairs(M.claude_code.instances) do
+    if bufnr and vim.api.nvim_buf_is_valid(bufnr) then
+      return true
+    end
+  end
+  return false
+end
+
 -- Terminal buffer and window management
 --- @type table
 M.claude_code = terminal.terminal
@@ -58,7 +76,9 @@ end
 --- Toggle the Claude Code terminal window
 --- This is a public function used by commands
 function M.toggle()
-  terminal.toggle(M, M.config, git)
+  -- If a session exists, prefer the last-used provider; otherwise use default
+  local provider = has_any_session() and M.last_used_provider or nil
+  terminal.toggle(M, M.config, git, provider)
 
   -- Set up terminal navigation keymaps after toggling
   local bufnr = get_current_buffer_number()
@@ -82,7 +102,8 @@ function M.toggle_with_variant(variant_name)
   M.config.command = original_command .. ' ' .. M.config.command_variants[variant_name]
 
   -- Call the toggle function with the modified command
-  terminal.toggle(M, M.config, git)
+  -- Use last used provider if available when applying a variant
+  terminal.toggle(M, M.config, git, M.last_used_provider, variant_name)
 
   -- Set up terminal navigation keymaps after toggling
   local bufnr = get_current_buffer_number()
@@ -92,6 +113,22 @@ function M.toggle_with_variant(variant_name)
 
   -- Restore the original command
   M.config.command = original_command
+end
+
+--- Toggle the Claude Code terminal window with a specific provider
+--- @param provider_name string The name of the provider to use
+function M.toggle_with_provider(provider_name)
+  -- Call the toggle function with the specified provider
+  terminal.toggle(M, M.config, git, provider_name)
+
+  -- Remember last used provider for future :CLIAgents calls
+  M.last_used_provider = provider_name
+
+  -- Set up terminal navigation keymaps after toggling
+  local bufnr = get_current_buffer_number()
+  if bufnr and vim.api.nvim_buf_is_valid(bufnr) then
+    keymaps.setup_terminal_navigation(M, M.config)
+  end
 end
 
 --- Get the current version of the plugin

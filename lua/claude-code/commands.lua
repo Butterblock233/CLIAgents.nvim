@@ -13,9 +13,13 @@ M.commands = {}
 --- @param claude_code table The main plugin module
 function M.register_commands(claude_code)
   -- Create the user command for toggling CLI Agents
-  vim.api.nvim_create_user_command('CLIAgents', function()
-    claude_code.toggle()
-  end, { desc = 'Toggle CLI Agents terminal' })
+  vim.api.nvim_create_user_command('CLIAgents', function(opts)
+    if opts.args and opts.args ~= '' then
+      claude_code.toggle_with_provider(opts.args)
+    else
+      claude_code.toggle()
+    end
+  end, { desc = 'Toggle CLI Agents terminal', nargs = '?' })
 
   -- Create commands for each command variant
   for variant_name, variant_args in pairs(claude_code.config.command_variants) do
