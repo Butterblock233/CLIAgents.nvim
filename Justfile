@@ -8,7 +8,6 @@ LUA_PATH := 'lua/'
 TEST_PATH := 'test/'
 DOC_PATH := 'doc/'
 
-# Default invocation (`just`) runs tests, matching Makefile's first target.
 test:
   @echo "Running Plenary tests (Nushell)..."
   nu scripts/test.nu
@@ -37,6 +36,7 @@ lint:
 format:
   @echo "Formatting Lua files..."
   stylua {{LUA_PATH}}
+  stylua ./tests/spec
 
 docs:
   @echo "Generating documentation..."

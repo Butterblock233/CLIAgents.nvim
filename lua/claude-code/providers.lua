@@ -13,6 +13,7 @@ local M = {}
 --- @field env table|nil Environment variables for the provider
 --- @field working_directory string|nil Working directory override
 M.providers = {
+  -- default providers
   claude = {
     command = 'claude',
     args = {},

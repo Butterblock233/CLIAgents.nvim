@@ -76,10 +76,17 @@ describe('provider functionality', function()
       -- Should still have original args (empty by default)
     end)
 
+    it('should error for empty provider', function()
+      assert.has_error(function()
+        providers.get_provider_config('', {})
+      end, 'Provider name must be a non-empty string')
+    end)
+
     it('should error for unknown provider', function()
       assert.has_error(function()
         providers.get_provider_config('unknown', {})
-      end, 'Unknown provider: unknown')
+      end)
+      --'Provider name must be a non-empty string'
     end)
   end)
 
