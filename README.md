@@ -1,15 +1,15 @@
-# Claude Code Neovim Plugin
+# CLIAgents.nvim
 
-[![GitHub License](https://img.shields.io/github/license/greggh/claude-code.nvim?style=flat-square)](https://github.com/greggh/claude-code.nvim/blob/main/LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/greggh/claude-code.nvim?style=flat-square)](https://github.com/greggh/claude-code.nvim/stargazers)
-[![GitHub Issues](https://img.shields.io/github/issues/greggh/claude-code.nvim?style=flat-square)](https://github.com/greggh/claude-code.nvim/issues)
-[![CI](https://img.shields.io/github/actions/workflow/status/greggh/claude-code.nvim/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/greggh/claude-code.nvim/actions/workflows/ci.yml)
+[![GitHub License](https://img.shields.io/github/license/Butterblock233/CLIAgents.nvim?style=flat-square)](https://github.com/Butterblock233/CLIAgents.nvim/blob/main/LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/Butterblock233/CLIAgents.nvim?style=flat-square)](https://github.com/Butterblock233/CLIAgents.nvim/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/Butterblock233/CLIAgents.nvim?style=flat-square)](https://github.com/Butterblock233/CLIAgents.nvim/issues)
+[![CI](https://img.shields.io/github/actions/workflow/status/Butterblock233/CLIAgents.nvim/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/Butterblock233/CLIAgents.nvim/actions/workflows/ci.yml)
 [![Neovim Version](https://img.shields.io/badge/Neovim-0.7%2B-blueviolet?style=flat-square&logo=neovim)](https://github.com/neovim/neovim)
-[![Tests](https://img.shields.io/badge/Tests-44%20passing-success?style=flat-square&logo=github-actions)](https://github.com/greggh/claude-code.nvim/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/Version-0.4.2-blue?style=flat-square)](https://github.com/greggh/claude-code.nvim/releases/tag/v0.4.2)
-[![Discussions](https://img.shields.io/github/discussions/greggh/claude-code.nvim?style=flat-square&logo=github)](https://github.com/greggh/claude-code.nvim/discussions)
+[![Tests](https://img.shields.io/badge/Tests-44%20passing-success?style=flat-square&logo=github-actions)](https://github.com/Butterblock233/CLIAgents.nvim/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/badge/Version-0.4.2-blue?style=flat-square)](https://github.com/Butterblock233/CLIAgents.nvim/releases/tag/v0.4.2)
+[![Discussions](https://img.shields.io/github/discussions/Butterblock233/CLIAgents.nvim?style=flat-square&logo=github)](https://github.com/Butterblock233/CLIAgents.nvim/discussions)
 
-*A seamless integration between [Claude Code](https://github.com/anthropics/claude-code) AI assistant and Neovim*
+*Intergrate CLIAgents(e.g. `claude-code`,`gemini-cli`, `codex` into your Neovim*, fork from [claude-code.nvim](https://github.com/greggh/claude-code.nvim)
 
 [Features](#features) •
 [Requirements](#requirements) •
@@ -17,30 +17,27 @@
 [Configuration](#configuration) •
 [Usage](#usage) •
 [Contributing](#contributing) •
-[Discussions](https://github.com/greggh/claude-code.nvim/discussions)
+[Discussions](https://github.com/Butterblock233/CLIAgents.nvim/discussions)
 
-![Claude Code in Neovim](https://github.com/greggh/claude-code.nvim/blob/main/assets/claude-code.png?raw=true)
+![Claude Code in Neovim](https://github.com/Butterblock233/CLIAgents.nvim/blob/main/assets/claude-code.png?raw=true)
 
 This plugin was built entirely with Claude Code in a Neovim terminal, and then inside itself using Claude Code for everything!
 
 ## Features
 
-- 🚀 Toggle Claude Code in a terminal window with a single key press
-- 🧠 Support for command-line arguments like `--continue` and custom variants
-- 🔄 Automatically detect and reload files modified by Claude Code
-- ⚡ Real-time buffer updates when files are changed externally
+- 🚀 Toggle CLIAgents in a terminal window with a single key press
 - 📱 Customizable window position and size (including floating windows)
 - 🤖 Integration with which-key (if available)
 - 📂 Automatically uses git project root as working directory (when available)
 - 🧩 Modular and maintainable code structure
 - 📋 Type annotations with LuaCATS for better IDE support
 - ✅ Configuration validation to prevent errors
-- 🧪 Testing framework for reliability (44 comprehensive tests)
+- 🧪 Testing framework for reliability
 
 ## Requirements
 
 - Neovim 0.7.0 or later
-- [Claude Code CLI](https://github.com/anthropics/claude-code) tool installed and available in your PATH
+- [Claude Code CLI](https://github.com/anthropics/claude-code) tool installed and available in your PATH, or other programs like`codex`
 - [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) (dependency for git operations)
 
 See [CHANGELOG.md](CHANGELOG.md) for version history and updates.
@@ -51,7 +48,7 @@ See [CHANGELOG.md](CHANGELOG.md) for version history and updates.
 
 ```lua
 return {
-  "greggh/claude-code.nvim",
+  "Butterblock233/CLIAgents.nvim",
   dependencies = {
     "nvim-lua/plenary.nvim", -- Required for git operations
   },
@@ -65,7 +62,7 @@ return {
 
 ```lua
 use {
-  'greggh/claude-code.nvim',
+  'Butterblock233/CLIAgents.nvim',
   requires = {
     'nvim-lua/plenary.nvim', -- Required for git operations
   },
@@ -79,14 +76,14 @@ use {
 
 ```vim
 Plug 'nvim-lua/plenary.nvim'
-Plug 'greggh/claude-code.nvim'
+Plug 'Butterblock233/CLIAgents.nvim'
 " After installing, add this to your init.vim:
 " lua require('claude-code').setup()
 ```
 
 ## Configuration
 
-The plugin can be configured by passing a table to the `setup` function. Here's the default configuration:
+The plugin can be configured by passing a table to the `setup` function. Here's the **default** configuration:
 
 ```lua
 require("claude-code").setup({
@@ -137,6 +134,7 @@ require("claude-code").setup({
     verbose = "--verbose",   -- Enable verbose logging with full turn-by-turn output
   },
   -- Keymaps
+  -- You can also use `vim.keymap.set()` to set keymap
   keymaps = {
     toggle = {
       normal = "<C-,>",       -- Normal mode keymap for toggling Claude Code, false to disable
@@ -177,7 +175,7 @@ Basic command:
 
 Conversation management commands:
 
-- `:CLIAgentsContinue` - Resume the most recent conversation
+- `:CLIAgentsContinue` - Resume the most recent conversation(experimental)
 - `:CLIAgentsResume` - Display an interactive conversation picker
 
 Output options command:
@@ -279,9 +277,9 @@ make format
 
 ## Community
 
-- [GitHub Discussions](https://github.com/greggh/claude-code.nvim/discussions) - Get help, share ideas, and connect with other users
-- [GitHub Issues](https://github.com/greggh/claude-code.nvim/issues) - Report bugs or suggest features
-- [GitHub Pull Requests](https://github.com/greggh/claude-code.nvim/pulls) - Contribute to the project
+- [GitHub Discussions](https://github.com/Butterblock233/CLIAgents.nvim/discussions) - Get help, share ideas, and connect with other users
+- [GitHub Issues](https://github.com/Butterblock233/CLIAgents.nvim/issues) - Report bugs or suggest features
+- [GitHub Pull Requests](https://github.com/Butterblock233/CLIAgents.nvim/pulls) - Contribute to the project
 
 ## Acknowledgements
 
