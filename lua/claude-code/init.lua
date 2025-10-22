@@ -131,15 +131,6 @@ function M.toggle_with_provider(provider_name)
   end
 end
 
---- Get the current version of the plugin
---- @return string version Current version string
-function M.get_version()
-  return version.string()
-end
-
---- Version information
-M.version = version
-
 --- Setup function for the plugin
 --- @param user_config? table User configuration table (optional)
 function M.setup(user_config)
@@ -158,6 +149,10 @@ function M.setup(user_config)
 
   -- Register keymaps
   keymaps.register_keymaps(M, M.config)
+end
+
+function M.version()
+  version.print_version()
 end
 
 return M

@@ -1,8 +1,9 @@
 # Claude Code dev tasks (Makefile -> Justfile)
 
 # Ensure POSIX shell semantics for recipes
-set shell := ["bash", "-c"]
+set shell := ["nu", "-c"]
 
+alias t := test
 # Defaults (adjust if needed)
 LUA_PATH := 'lua/'
 TEST_PATH := 'test/'
@@ -40,7 +41,7 @@ format:
 
 docs:
   @echo "Generating documentation..."
-  @if command -v ldoc > /dev/null 2>&1; then ldoc {{LUA_PATH}} -d {{DOC_PATH}}luadoc -c .ldoc.cfg || true; else echo "ldoc not installed. Skipping documentation generation."; fi
+  @if (which ldoc | is-empty) { echo "ldoc not installed. Skipping documentation generation." } else {ldoc {{LUA_PATH}} -d {{DOC_PATH}};luadoc -c .ldoc.cfg  }
 
 clean:
   @echo "Cleaning generated files..."

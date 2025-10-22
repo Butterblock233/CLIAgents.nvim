@@ -10,6 +10,7 @@ local M = {}
 --- @class ProviderConfig
 --- @field command string Base command for the provider
 --- @field args table<string> Default command arguments
+--- @field args_resume string
 --- @field env table|nil Environment variables for the provider
 --- @field working_directory string|nil Working directory override
 M.providers = {
@@ -17,6 +18,7 @@ M.providers = {
   claude = {
     command = 'claude',
     args = {},
+    args_resume = '--resume',
   },
   gemini = {
     command = 'gemini',
