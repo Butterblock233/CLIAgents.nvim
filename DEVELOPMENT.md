@@ -9,7 +9,7 @@ This document outlines the development workflow, testing setup, and requirements
 - **Neovim**: Version 0.10.0 or higher
   - Required for `vim.system()`, splitkeep, and modern LSP features
 - **Git**: For version control
-- **Make**: For running development commands
+- **Just**: For running development commands
 
 ### Development Tools
 
@@ -54,6 +54,9 @@ sudo luarocks install luacheck
 
 # Install stylua (from AUR)
 yay -S stylua
+
+# Install Just
+sudo pacman -S just
 ```
 
 #### Fedora
@@ -98,7 +101,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
 
 # Install dependencies
-scoop install neovim git make ripgrep fd
+scoop install neovim git make ripgrep fd just
 
 # Install luarocks
 scoop install luarocks
@@ -117,7 +120,7 @@ scoop install stylua
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
 # Install dependencies
-choco install neovim git make ripgrep fd
+choco install neovim git make ripgrep fd just
 
 # Install luarocks
 choco install luarocks
@@ -136,13 +139,13 @@ luarocks install luacheck
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/greggh/claude-code.nvim.git
+   git clone https://github.com/Butterblock233/CLIAgents.nvim.git
    ```
 
 2. Install Git hooks:
 
    ```bash
-   cd claude-code.nvim
+   cd CLIAgents.nvim
    ./scripts/setup-hooks.sh
    ```
 
