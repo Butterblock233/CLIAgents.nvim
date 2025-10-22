@@ -124,3 +124,5 @@ luac.out
 *.src.rock
 *.zip
 *.tar.gz
+
+.claude/*.local.*

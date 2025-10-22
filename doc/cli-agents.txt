@@ -1,22 +1,23 @@
-*claude-code.txt*             Seamless integration between Claude Code AI and Neovim
+*cli-agents.txt*             Seamless integration between Claude Code AI and Neovim
 
 ==============================================================================
-CONTENTS                                                   *claude-code-contents*
+CONTENTS                                                   *cli-agents-contents*
 
-  1. Introduction .......................... |claude-code-introduction|
-  2. Installation .......................... |claude-code-installation|
-  3. Usage ................................ |claude-code-usage|
-  4. Configuration ........................ |claude-code-configuration|
-  5. Commands ............................. |claude-code-commands|
-  6. Mappings ............................. |claude-code-mappings|
-  7. Contributing ......................... |claude-code-contributing|
-  8. License .............................. |claude-code-license|
+  1. Introduction .......................... |cli-agents-introduction|
+  2. Installation .......................... |cli-agents-installation|
+  3. Usage ................................ |cli-agents-usage|
+  4. Configuration ........................ |cli-agents-configuration|
+  5. Commands ............................. |cli-agents-commands|
+  6. Mappings ............................. |cli-agents-mappings|
+  7. Contributing ......................... |cli-agents-contributing|
+  8. License .............................. |cli-agents-license|
 
 ==============================================================================
-1. INTRODUCTION                                        *claude-code-introduction*
+1. INTRODUCTION                                        *cli-agents-introduction*
 
-Claude Code is a plugin that provides seamless integration between the Claude
-Code AI assistant (command-line tool) and Neovim. It allows you to:
+Fork from [claude-code.nvim](https://github.com/greggh/claude-code.nvim),
+CLI Agents is a plugin that provides seamless integration between the Claude
+Code AI assistant (or similar command-line tool) and Neovim. It allows you to:
 
 - Toggle Claude Code in a terminal window at the bottom of your Neovim screen
 - Automatically detect and reload files modified by Claude Code
@@ -26,53 +27,77 @@ NOTE: This plugin requires the official Claude Code CLI tool to be installed
 and available in your system's PATH.
 
 ==============================================================================
-2. INSTALLATION                                        *claude-code-installation*
+2. INSTALLATION                                        *cli-agents-installation*
 
 Install using your favorite plugin manager:
 
 Using lazy.nvim:
 >lua
-  return {
-    "greggh/claude-code.nvim",
+  {
+    "Butterblock233/CLIAgents.nvim",
     dependencies = {
       "nvim-lua/plenary.nvim", -- Required for git operations
     },
-    config = function()
-      require("claude-code").setup()
-    end
-  }
-<
-
-Using vim-plug:
->vim
-  Plug 'nvim-lua/plenary.nvim'
-  Plug 'greggh/claude-code.nvim'
-  " After installing, add this to your init.vim:
-  " lua require('claude-code').setup()
-<
-
-Using packer.nvim:
->lua
-  use {
-    'greggh/claude-code.nvim',
-    requires = {
-      'nvim-lua/plenary.nvim', -- Required for git operations
+    dev = true,
+    dir = "~/src/Projects/CLIAgents.nvim",
+    keys = {
+      { "<leader>cc", "<cmd>CLIAgents<CR>", mode = { "t", "n" }, desc = "Toggle CLI Agents" },
+      { "<C-S-C>", "<cmd>CLIAgents<CR>", mode = { "t", "n" }, desc = "Toggle CLI Agents" },
+      { "<A-c>", "<cmd>CLIAgents<CR>", mode = { "t", "n" }, desc = "Toggle CLI Agents" },
     },
-    config = function()
-      require('claude-code').setup()
-    end
+    cmd = {
+      "CLIAgents",
+      "CLIAgentsResume",
+      "CLIAgentsVersion"
+    },
+    opts = {
+      providers = {
+        default_provider = "claude", -- Default value
+        --- @class ProviderConfig
+        providers = {
+          gemini = {
+            command = "gemini",
+            args_resume = "/chat resume",
+          },
+          codex = {
+            command = "codex",
+          },
+        },
+      },
+      shell = {
+        separator = ";",
+      },
+      window = {
+        split_ratio = 0.3, -- Percentage of screen for the terminal window (height for horizontal, width for vertical splits)
+        ---@type "botright" | "topleft" | "vertical" | "float"
+        position = "float", -- Position of the window: "botright", "topleft", "vertical", "float", etc.
+      },
+      keymaps = {
+        toggle = {
+          -- normal = "<C-l>", -- Normal mode keymap for toggling Claude Code, false to disable
+          -- terminal = "<C-l>", -- Terminal mode keymap for toggling Claude Code, false to disable
+          variants = {
+            continue = "<leader>cC", -- Normal mode keymap for Claude Code with continue flag
+            verbose = "<leader>cV", -- Normal mode keymap for Claude Code with verbose flag
+          },
+        },
+        window_navigation = true, -- Enable window navigation keymaps (<C-h/j/k/l>)
+        scrolling = true, -- Enable scrolling keymaps (<C-f/b>) for page up/down
+      },
+    },
   }
 <
 
 PREREQUISITES:
 - Neovim 0.7.0 or later
-- Claude Code CLI tool (https://github.com/anthropics/claude-code)
+- Claude Code CLI tool (https://github.com/anthropics/claude-code) or any
+similar tools like `codex` or `gemini`
 - plenary.nvim plugin (https://github.com/nvim-lua/plenary.nvim) for git operations
 
 ==============================================================================
-3. USAGE                                                    *claude-code-usage*
+3. USAGE                                                    *cli-agents-usage*
 
-- Use the `:ClaudeCode` command to toggle the Claude Code terminal window
+- Use the `:CLIAgents` command to toggle the Claude Code terminal window
 - Press <leader>ac in normal mode to toggle Claude Code terminal window
 - Press <C-o> in the terminal to close the Claude Code window
 - When Claude Code modifies files that are open in Neovim, they'll be
@@ -81,7 +106,7 @@ PREREQUISITES:
   directory as its working directory using pushd/popd commands (configurable)
 
 ==============================================================================
-4. CONFIGURATION                                    *claude-code-configuration*
+4. CONFIGURATION                                    *cli-agents-configuration*
 
 Configure the plugin by passing a table to the setup function. Below is the
 default configuration:
@@ -96,7 +121,7 @@ default configuration:
       start_in_normal_mode = false, -- Whether to start in normal mode instead of insert mode
       hide_numbers = true,    -- Hide line numbers in the terminal window
       hide_signcolumn = true, -- Hide the sign column in the terminal window
-      
+
       -- Floating window configuration (only applies when position = "float")
       float = {
         width = "80%",        -- Width: number of columns or percentage string
@@ -125,7 +150,7 @@ default configuration:
       -- Conversation management
       continue = "--continue", -- Resume the most recent conversation
       resume = "--resume",     -- Display an interactive conversation picker
-      
+
       -- Output options
       verbose = "--verbose",   -- Enable verbose logging with full turn-by-turn output
     },
@@ -144,32 +169,26 @@ default configuration:
 <
 
 ==============================================================================
-5. COMMANDS                                                *claude-code-commands*
+5. COMMANDS                                                *cli-agents-commands*
 
-:ClaudeCode                                                       *:ClaudeCode*
-    Toggle the Claude Code terminal window.
+:CLIAgents                                                       *:CLIAgents*
+    Toggle the CLI Agents terminal window.
 
 Conversation Management Commands:
-:ClaudeCodeContinue                                           *:ClaudeCodeContinue*
-    Toggle Claude Code with the --continue flag to resume the most recent conversation.
 
-:ClaudeCodeResume                                             *:ClaudeCodeResume*
+:CLIAgentsResume                                             *:CLIAgentsResume*
     Toggle Claude Code with the --resume flag to display an interactive conversation picker.
-
-Output Options Commands:
-:ClaudeCodeVerbose                                           *:ClaudeCodeVerbose*
-    Toggle Claude Code with the --verbose flag for full turn-by-turn output.
 
 Note: Commands are automatically generated for each entry in your command_variants configuration.
 
 ==============================================================================
-6. MAPPINGS                                                *claude-code-mappings*
+6. MAPPINGS                                                *cli-agents-mappings*
 
 Default key mappings:
 
   <leader>ac   Toggle Claude Code terminal window (normal mode)
   <C-.>        Toggle Claude Code terminal window (both normal and terminal modes)
-  
+
 Variant mode mappings (if configured):
 
   <leader>cC   Toggle Claude Code with --continue flag
@@ -190,14 +209,14 @@ to re-enter insert mode so you can continue typing to Claude Code.
 You can customize these mappings in the configuration.
 
 ==============================================================================
-7. CONTRIBUTING                                          *claude-code-contributing*
+7. CONTRIBUTING                                          *cli-agents-contributing*
 
 Contributions to Claude Code are welcome! If you would like to contribute,
 please check the CONTRIBUTING.md file in the repository for guidelines:
-https://github.com/greggh/claude-code.nvim/blob/main/CONTRIBUTING.md
+https://github.com/greggh/cli-agents.nvim/blob/main/CONTRIBUTING.md
 
 ==============================================================================
-8. LICENSE                                                  *claude-code-license*
+8. LICENSE                                                  *cli-agents-license*
 
 MIT License
 
